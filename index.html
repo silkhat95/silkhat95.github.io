@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>progress bar</title>
+  <script src="pace.min.js"></script>
+  <link rel="stylesheet" href="pace-theme-flash.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons8-96.bmp"> 
+  <link rel="apple-touch-icon" href="icons8-198.bmp">
+  
+  <style type="text/css">
+    :root {
+      /* Aero Glass用の鮮やかな背景グラデーション */
+      --bg-gradient: radial-gradient(circle at 20% 20%, #e0f2fe 0%, #e0e7ff 50%, #f3e8ff 100%);
+      /* ライトモード：高透明度のクリスタルガラス */
+      --glass-bg: rgba(255, 255, 255, 0.45);
+      --glass-border: rgba(255, 255, 255, 0.6);
+      --text-main: #1e293b;
+      --text-sub: #475569;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+      --modal-overlay: rgba(15, 23, 42, 0.2);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-gradient: radial-gradient(circle at 80% 80%, #0f172a 0%, #1e1b4b 60%, #2e1065 100%);
+        /* ダークモード：深みのあるスモークガラス */
+        --glass-bg: rgba(15, 23, 42, 0.45);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --text-main: #f8fafc;
+        --text-sub: #cbd5e1;
+        --primary: #60a5fa;
+        --primary-hover: #3b82f6;
+        --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        --modal-overlay: rgba(0, 0, 0, 0.5);
+      }
+    }
+
+    body {
+      font-family: "AomemoFont", "BIZ UDP明朝", "BIZ UDPゴシック", system-ui, -apple-system, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      transition: background 0.5s ease;
+      box-sizing: border-box;
+    }
+
+    /* Aero Glassの核心：グラスモーフィズムコンテナ */
+    .container {
+      max-width: 480px;
+      width: 100%;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px); /* 磨りガラスのボカシ強度 */
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--glass-border); /* ガラスの光沢エッジ */
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-sizing: border-box;
+    }
+    .container:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.15);
+    }
+
+    h3 {
+      margin: 0 0 6px 0;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.2);
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+
+    /* 時刻表示エリアも透明なガラスパネル化 */
+    .clock-section {
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      margin-bottom: 28px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      font-weight: 500;
+    }
+    @media (prefers-color-scheme: dark) {
+      .clock-section {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+    }
+
+    #clock-display {
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--glass-border);
+      margin: 24px 0;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .label-text {
+      font-size: 13px;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-sub);
+    }
+
+    /* ガラスに映えるネオン質感のカスタムメーター */
+    meter {
+      width: 100% !important;
+      height: 14px;
+      display: block;
+      margin-bottom: 14px;
+    }
+    meter::-webkit-meter-bar {
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 20px;
+      border: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    @media (prefers-color-scheme: dark) {
+      meter::-webkit-meter-bar {
+        background: rgba(255, 255, 255, 0.08);
+      }
+    }
+    meter::-webkit-meter-optimum-value {
+      background: linear-gradient(90deg, #34d399, #10b981);
+      border-radius: 20px;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+    meter::-webkit-meter-suboptimum-value {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      border-radius: 20px;
+      box-shadow: 0 0 12px rgba(245, 158, 114, 0.4);
+    }
+    meter::-webkit-meter-even-less-good-value {
+      background: linear-gradient(90deg, #f97316, #ea580c);
+      border-radius: 20px;
+      box-shadow: 0 0 12px rgba(234, 88, 12, 0.4);
+    }
+    meter.full-danger::-webkit-meter-even-less-good-value {
+      background: linear-gradient(90deg, #f87171, #ef4444) !important;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.6) !important;
+    }
+
+    #cmt {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      min-height: 20px;
+      margin-top: 6px;
+    }
+
+    .input-sync-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    /* シークバー（スライダー）のAero化 */
+    input[type="range"] {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(0, 0, 0, 0.1);
+      outline: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      input[type="range"] {
+        background: rgba(255, 255, 255, 0.15);
+      }
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid var(--primary);
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 12px var(--primary);
+    }
+
+    /* 入力ボックスのガラス一体化 */
+    input[type="number"] {
+      width: 94px;
+      padding: 10px;
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      color: var(--text-main);
+      font-size: 16px;
+      font-weight: 600;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    @media (prefers-color-scheme: dark) {
+      input[type="number"] {
+        background: rgba(0, 0, 0, 0.25);
+      }
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0 12px rgba(74, 144, 226, 0.3);
+    }
+    @media (prefers-color-scheme: dark) {
+      input[type="number"]:focus {
+        background: rgba(0, 0, 0, 0.4);
+      }
+    }
+
+    .input-hint {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 10px;
+      display: block;
+    }
+
+    /* グロッシーな光沢ボタン */
+    button {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+
+    /* モーダルダイアログのガラス化（超強力ボカシ） */
+    dialog {
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      color: var(--text-main);
+      padding: 28px;
+      max-width: 360px;
+      width: 90%;
+      box-shadow: var(--shadow);
+      box-sizing: border-box;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: opacity 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                  transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                  display 0.3s ease allow-discrete;
+    }
+    dialog[open] {
+      opacity: 1;
+      transform: scale(1);
+    }
+    dialog::backdrop {
+      background: var(--modal-overlay);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      opacity: 0;
+      transition: opacity 0.3s ease, display 0.3s ease allow-discrete;
+    }
+    dialog[open]::backdrop {
+      opacity: 1;
+    }
+    .modal-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin: 0 0 14px 0;
+      text-align: center;
+    }
+    .modal-body {
+      font-size: 15px;
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.6;
+      color: var(--text-sub);
+    }
+    .modal-close-btn {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--glass-border);
+      box-shadow: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      .modal-close-btn {
+        background: rgba(255, 255, 255, 0.1);
+      }
+    }
+    .modal-close-btn:hover {
+      background: rgba(0, 0, 0, 0.1);
+      box-shadow: none;
+    }
+    @media (prefers-color-scheme: dark) {
+      .modal-close-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+    }
+  </style>
+</head>
+<body class="pace-done">
+
+  <div class="pace pace-inactive">
+    <div class="pace-progress" data-progress-text="100%" data-progress="99" 
+         style="transform: translate3d(100%, 0px, 0px);">
+      <div class="pace-progress-inner"></div>
+    </div>
+    <div class="pace-activity"></div>
+  </div>
+
+  <div class="container">
+    <h3>Progress Bar</h3>
+    <div class="subtitle">現在値に対応したゲージを表示するバー</div>
+
+    <div class="clock-section">
+      現在時刻は <output id="clock-display">取得失敗</output> です。
+    </div>
+
+    <form oninput="syncInputs(this)">
+      <div class="form-group">
+        <span class="label-text">ディスク使用量</span>
+        <meter id="mtr1" value="0" min="0" max="1024" low="512" 
+               high="819" optimum="466">0ＧＢ</meter>
+        <output id="cmt">数値を入力するかスライダーを動かしてください</output>
+      </div>
+
+      <hr>
+
+      <div class="form-group">
+        <span class="label-text">ディスク使用量を調整</span>
+        <div class="input-sync-container">
+          <input type="range" name="diskRange" min="0" max="1024" value="0">
+          <input type="number" name="diskNum" placeholder="0" 
+                 min="0" max="1024" value="0">
+          <span style="font-weight: bold; font-size: 14px;">GB</span>
+        </div>
+        <span class="input-hint">
+          ※0～1024ＧＢの間で調整してください（連動します）
+        </span>
+      </div>
+    </form>
+
+    <div style="margin-top: 24px;">
+      <script async src="//://googlesyndication.com"></script>
+      <button onclick="openModal()">現在の時刻ポップアップ</button>
+    </div>
+  </div>
+
+  <dialog id="timeModal">
+    <div class="modal-title">現在時刻通知</div>
+    <div class="modal-body" id="modalTimeText">読み込み中...</div>
+    <button class="modal-close-btn" onclick="closeModal('timeModal')">閉じる</button>
+  </dialog>
+
+  <dialog id="agentModal">
+    <div class="modal-title">🌐 ブラウザ環境判定</div>
+    <div class="modal-body" id="modalAgentText">解析中...</div>
+    <button class="modal-close-btn" onclick="closeModal('agentModal')">閉じる</button>
+  </dialog>
+
+  <script>
+    window.addEventListener("load", function(){
+      var ele = document.getElementById("clock-display");
+      if (ele) {
+        function updateClock() {
+          var date2 = new Date();
+          ele.textContent = date2.toLocaleString('ja-JP');
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+      }
+    }, false);
+
+    function syncInputs(form) {
+      if (document.activeElement.name === 'diskNum') {
+        form.diskRange.value = form.diskNum.value;
+      } else {
+        form.diskNum.value = form.diskRange.value;
+      }
+      js1(form.diskNum.value);
+    }
+
+    function js1(valueString){    
+      var gage = document.getElementById('mtr1');
+      var comment = document.getElementById('cmt');
+      var val = Number(valueString);
+      gage.value = val;
+
+    if (val === 1024) {
+      gage.classList.add('full-danger');
+    } else {
+      gage.classList.remove('full-danger');
+    }
+
+      if (valueString === "") {
+          comment.value = "数値を入力するかスライダーを動かしてください";
+          return;
+      }
+
+    if (val <= 256) {
+        comment.value = "🔵 ディスク残量は十分な余裕があります";
+    } else if (val > 256 && val <= 512) {
+        comment.value = "🟢 ディスク残量は半分以上残っています";
+    } else if (val > 512 && val <= 819) {
+        comment.value = "🟡 ディスク残量が半分以下になりました";
+    } else if (val > 819 && val <= 1023) {
+        comment.value = "🟠 ディスク残量が２割以下になりました";
+    } else if (val === 1024) {
+        comment.value = "🔴 ディスクは満杯です";
+    }
+  }
+
+const timeModal = document.getElementById('timeModal');
+const agentModal = document.getElementById('agentModal');
+const modalTimeText = document.getElementById('modalTimeText');
+const modalAgentText = document.getElementById('modalAgentText');
+
+function openModal() {
+var currentDate = new Date();
+modalTimeText.innerHTML = "現在時刻は" +"" +currentDate.getHours() + "時" +String(currentDate.getMinutes()).padStart(2, '0') + "分" +String(currentDate.getSeconds()).padStart(2, '0') + "秒 です。";
+timeModal.showModal();
+}
+
+function closeModal(id) {
+document.getElementById(id).close();
+}
+
+[timeModal, agentModal].forEach(modal => {
+modal.addEventListener('click', (e) => {
+if (e.target === modal) {
+modal.close();
+}});
+});
+
+if ('serviceWorker' in navigator) {
+navigator.serviceWorker.register('sw.js').then(registration => {
+registration.addEventListener('updatefound', () => {
+const newWorker = registration.installing;
+newWorker.addEventListener('statechange', () => {
+alert('New version is ready! Please reload!');
+});
+});
+});
+}
+
+function agents(){
+const agent = navigator.userAgent.toLowerCase();
+let browserName = "不明なブラウザ";
+if (agent.includes("msie") || agent.includes("trident")) {browserName = "Internet Explorer";} else if (agent.includes("edg") || agent.includes("edge")) {browserName = "Edge";} else if (agent.includes("opr") || agent.includes("opera")) {browserName = "Opera";} else if (agent.includes("fxios")) {browserName = "FireFox for iOS";} else if (agent.includes("crios")) {browserName = "Chrome for iOS";} else if (agent.includes("firefox")) {browserName = "FireFox";} else if (agent.includes("chrome")) {browserName = "Chrome";} else if (agent.includes("safari")) {browserName = "Safari";
+}
+
+modalAgentText.innerHTML = "ブラウザは" +"" +browserName + " です。";
+agentModal.showModal();
+}
+window.addEventListener("load", agents, false);
+</script>
+
+<br>
+<br>
+<a href=index1.html>Version1のページへ</a>
+<br>
+<br>
+<a href=index2.html>Version2のページへ</a>
+<br>
+<br>
+<a href=index3.html>Version3のページへ</a>
+<br>
+<br>
+<a href=index4.html>Version4のページへ</a>
+<br>
+<br>
+<a href=index5.html>Version5のページへ</a>
+<br>
+<br>
+<a href=index5_1.html>Version5.1のページへ</a>
+
+</body>
+</html>
