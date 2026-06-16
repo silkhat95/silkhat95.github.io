@@ -1,8 +1,8 @@
 {
   "name": "PWA Progress Bar",
   "short_name": "ProgressBar",
-  "theme_color": "#ffa500",
-  "background_color": "#ffa500",
+  "theme_color": "#e0e7ff",
+  "background_color": "#e0e7ff",
   "display": "standalone",
   "start_url": "index.html",
   "icons": [
