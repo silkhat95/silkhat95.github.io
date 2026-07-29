@@ -1,0 +1,74 @@
+<!DOCTIPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="pace.min.js"></script>
+<link rel="stylesheet" href="pace-theme-flash.css">
+  <link rel="icon" href="icon128.png">
+  <title>progress bar</title>
+</head>
+<body>
+<script>
+function js1(num){    
+// まず、meter のための指定
+    var gage = document.getElementById('mtr1');
+    gage.value = num.value;
+// ココから下は コメントのための指定
+    var comment = document.getElementById('cmt');
+    if (num.value <= 5) {
+        comment.value = "ディスク残量は半分以上あります";
+    } else if (num.value > 5, num.value <= 8) {
+        comment.value = "ディスク残量が半分以下になりました";
+    } else if (num.value > 8, num.value <= 10) {
+        comment.value = "ディスク残量が２割以下になりました";
+    }
+}
+</script><style type="text/css">
+<!--
+
+-->
+</style>
+</head>
+<body>
+<strong>現在時刻は  <output>(不明)</output>
+    <script>
+      window.addEventListener("load",function(){
+        var ele=document.getElementsByTagName("output")[0];
+        setInterval(function(){
+          //現在時刻のDateオブジェクトを生成
+          var date2 = new Date();
+          ele.innerHTML=date2;
+      },200);
+      },false)
+    </script>です。</strong><br>
+<hr>
+	<h3>progress bar</h3>
+	<div class="tmContNaiyo">
+	<div class="tmMargL15px">
+		<strong>現在値に対応したゲージを表示するバー</strong><br>
+		<div class="m-tag-sample">
+		<form oninput="js1(disk)">
+		<p>ディスク使用量：
+		<meter id="mtr1" value="0" min="0" max="100" low="50" high="80" optimum="49" style="width:200px">0ＧＢ</meter>
+		：<output id="cmt">入力なし</output>
+		</p>
+		<p>ディスク使用量を入力してください→ 
+		<input type="number" name="disk" placeholder="ＧＢで入力" size="100" min="0" max="100" style="width:80px">ＧＢ<br>
+		（0～100ＧＢで入力してください）</p>
+			</form>
+			</div><br>
+	</div>
+	</div>
+<div>
+
+<a href=HTML.html>HTMLエディタ</a><br>
+<br>
+<button onclick="clicked()">現在時刻をポップアップ</button>
+<script>
+  function clicked() {
+    var currentDate = new Date();
+    alert("見てくれてありがとう！現在時刻は" + currentDate.getHours() + "時" + currentDate.getMinutes() + "分です。");
+  }
+</script>
+</body>
+</html>
