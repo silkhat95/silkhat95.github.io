@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ultralight ブラウザ（デモ）</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: #e6e6e6; font-family: "Meiryo UI", "Yu Gothic UI", "Segoe UI", sans-serif; color: #222; }
+
+  /* ---- ブラウザの枠 ---- */
+  .win { display: flex; flex-direction: column; height: 100%; max-width: 1280px; margin: 0 auto; background: #fff; border: 1px solid #9aa3ae; }
+
+  .titlebar { height: 32px; flex: 0 0 32px; display: flex; align-items: center; padding-left: 10px; border-bottom: 1px solid #e1e4e8; font-size: 13px; color: #333; }
+  .titlebar .app-icon { width: 16px; height: 16px; border-radius: 3px; background: #1f5fbf; margin-right: 8px; }
+  .titlebar .spacer { flex: 1; }
+  .titlebar .wbtn { width: 46px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #333; }
+
+  .toolbar { height: 56px; flex: 0 0 56px; display: flex; align-items: center; gap: 8px; padding: 0 8px; background: #f3f3f3; border-bottom: 1px solid #d0d0d0; }
+  .toolbar button, .toolbar input[type=text] { font-family: inherit; }
+  .nav-btn { width: 36px; height: 36px; border: 1px solid #c8ccd2; border-radius: 4px; background: #fff; color: #333; font-size: 18px; cursor: pointer; font-family: "Segoe UI Symbol", sans-serif; }
+  .nav-btn:disabled { background: #f7f7f7; color: #a0a4aa; cursor: default; }
+  .nav-btn:not(:disabled):hover { background: #eef3fb; }
+  .addr { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid #b9bec6; border-radius: 2px; background: #fff; font-size: 14px; color: #222; }
+  .chk { display: flex; align-items: center; gap: 4px; font-size: 13px; white-space: nowrap; }
+  .go-btn { height: 36px; min-width: 64px; padding: 0 12px; border: none; border-radius: 2px; background: #1f5fbf; color: #fff; font-size: 14px; cursor: pointer; }
+  .go-btn:hover { background: #184a96; }
+
+  /* ---- 表示領域 ---- */
+  .viewport { flex: 1 1 auto; overflow: auto; background: #dddddd; }
+  .page { background: #fff; min-height: 100%; padding: 16px 24px 40px; }
+  .page.mobile { max-width: 390px; margin: 0 auto; box-shadow: 0 0 0 1px #bbb; }
+
+  .serif { font-family: "Times New Roman", "Yu Mincho", serif; }
+  .clock { font-size: 15px; padding-bottom: 8px; border-bottom: 1px solid #999; margin-bottom: 18px; }
+  h2 { font-family: "Times New Roman", "Yu Mincho", serif; font-size: 20px; margin: 16px 0 12px; }
+  p { margin: 0 0 14px; line-height: 1.6; font-size: 15px; }
+  .row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; font-size: 15px; }
+  .track { position: relative; width: 250px; max-width: 60%; height: 16px; background: #c4c4c4; border: 1px solid #9a9a9a; }
+  .track .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #7d7d7d; transition: width 0.2s ease; }
+  .track .fill.ok { background: linear-gradient(180deg, #c8f5b8 0%, #46c046 50%, #2c9a2c 100%); }
+  .track .fill.warn { background: linear-gradient(180deg, #fff3b0 0%, #f2c844 50%, #d9a31f 100%); }
+  .track .fill.danger { background: linear-gradient(180deg, #ffd6d6 0%, #ea5252 50%, #c42a2a 100%); }
+  .gb-input { width: 110px; height: 30px; padding: 0 8px; border: 1px solid #aaa; font-size: 14px; font-family: inherit; }
+  .gb-input::placeholder { color: #999; }
+  .note { font-size: 14px; color: #444; }
+  
+
+  .pill { display: inline-block; width: 320px; max-width: 100%; height: 160px; margin-top: 16px; border: none; border-radius: 999px; cursor: pointer; color: #fff; font-family: "Yu Gothic", "Meiryo", sans-serif; font-size: 52px; font-weight: 700; letter-spacing: 0.1em; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #1aa6a0 0%, #1a5cd6 45%, #0a2fa0 100%); box-shadow: inset 0 3px 6px rgba(255,255,255,0.35), 0 4px 10px rgba(0,0,0,0.35); }
+  .pill:hover { filter: brightness(1.08); }
+  .pill.noimg { background: #f0f0f0; color: #222; text-shadow: none; font-size: 20px; border-radius: 4px; box-shadow: none; border: 1px solid #999; height: 40px; width: 160px; }
+  .pill:disabled { filter: grayscale(0.7); cursor: default; }
+
+  /* ---- ステータスバー ---- */
+  .status { height: 26px; flex: 0 0 26px; display: flex; align-items: center; padding: 0 10px; background: #f0f0f0; border-top: 1px solid #d0d0d0; font-size: 12px; color: #444; }
+
+  /* ---- モーダル（ページ内のダイアログ） ---- */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .modal.hidden { display: none; }
+  .dialog { background: #fff; color: #222; min-width: 280px; max-width: 80%; padding: 20px 22px 16px; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  .dialog p { font-size: 15px; margin: 0 0 16px; white-space: pre-wrap; }
+  .dialog .actions { text-align: right; }
+  .dialog button { padding: 6px 20px; font-size: 14px; font-family: inherit; border: 1px solid #adadad; background: #f5f5f5; border-radius: 3px; cursor: pointer; }
+  .dialog button:hover { background: #e6e6e6; }
+  .dialog button:focus-visible, .go-btn:focus-visible, .pill:focus-visible, .nav-btn:focus-visible, .gb-input:focus-visible { outline: 2px solid #1f5fbf; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="titlebar">
+    <div class="app-icon" aria-hidden="true"></div>
+    Ultralight ブラウザ
+    <div class="spacer"></div>
+    <div class="wbtn" aria-hidden="true">―</div>
+    <div class="wbtn" aria-hidden="true">☐</div>
+    <div class="wbtn" aria-hidden="true">✕</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="nav-btn" id="back" aria-label="戻る" disabled>←</button>
+    <button class="nav-btn" id="fwd" aria-label="進む" disabled>→</button>
+    <button class="nav-btn" id="reload" aria-label="再読み込み">↻</button>
+    <button class="nav-btn" id="home" aria-label="ホーム">⌂</button>
+    <input class="addr" id="addr" type="text" aria-label="アドレス" value="https://silkhat95.github.io/index2.html">
+    <label class="chk"><input type="checkbox" id="mob">モバイル</label>
+    <label class="chk"><input type="checkbox" id="js" checked>JS</label>
+    <label class="chk"><input type="checkbox" id="img" checked>画像</label>
+    <button class="go-btn" id="go">移動</button>
+  </div>
+
+  <div class="viewport">
+    <div class="page" id="page">
+      <div class="clock serif" id="clock" role="status" aria-live="off"></div>
+
+      <h2>progress bar</h2>
+      <p>現在値に対応したゲージを表示するバー</p>
+
+      <div class="row">
+        <span>ディスク使用量：</span>
+        <div class="track" role="img" aria-label="ディスク使用量のゲージ"><div class="fill" id="fill"></div></div>
+        <span id="gaugeText">：入力なし</span>
+      </div>
+
+      <div class="row">
+        <label for="gb">ディスク使用量を入力してください→</label>
+        <input class="gb-input" id="gb" type="number" min="0" max="100" step="any" placeholder="GBで入力">
+        <span>GB</span>
+      </div>
+      <p class="note">（0〜100ＧＢで入力してください）</p>
+
+      
+
+      <button class="pill" id="timeBtn" type="button">現在時刻</button>
+    </div>
+  </div>
+
+  <div class="status"><span id="statusText">完了: progress bar</span></div>
+</div>
+
+<div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalMsg">
+  <div class="dialog">
+    <p id="modalMsg"></p>
+    <div class="actions"><button id="modalOk" type="button">OK</button></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const DEMO_URL = 'https://silkhat95.github.io/index2.html';
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const $ = (id) => document.getElementById(id);
+  const pad = (n) => String(n).padStart(2, '0');
+
+  const clockEl = $('clock');
+  const fill = $('fill');
+  const gaugeText = $('gaugeText');
+  const gb = $('gb');
+  const timeBtn = $('timeBtn');
+  const modal = $('modal');
+  const modalMsg = $('modalMsg');
+  const statusText = $('statusText');
+  const jsChk = $('js');
+  const imgChk = $('img');
+  const mobChk = $('mob');
+  const page = $('page');
+
+  // ---- 時刻 ----
+  function clockString(d) {
+    const off = -d.getTimezoneOffset();
+    const a = Math.abs(off);
+    const sign = off >= 0 ? '+' : '-';
+    return WD[d.getDay()] + ' ' + MON[d.getMonth()] + ' ' + pad(d.getDate()) + ' ' + d.getFullYear() + ' ' +
+      pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) +
+      ' GMT' + sign + pad(Math.floor(a / 60)) + pad(a % 60) + ' (日本標準時)';
+  }
+  let timer = null;
+  function tick() {
+    clockEl.textContent = '現在時刻は ' + clockString(new Date()) + ' です。';
+  }
+  function startClock() { stopClock(); tick(); timer = setInterval(tick, 1000); }
+  function stopClock() { if (timer !== null) { clearInterval(timer); timer = null; } }
+
+  // ---- プログレスバー ----
+  function updateGauge() {
+    const raw = gb.value;
+    if (raw === '') {
+      fill.style.width = '0%';
+      gaugeText.textContent = '：入力なし';
+      fill.className = 'fill';
+      return;
+    }
+    const n = Number(raw);
+    if (!isFinite(n) || n < 0 || n > 100) {
+      fill.style.width = '0%';
+      gaugeText.textContent = '：範囲外です（0〜100 GB）';
+      fill.className = 'fill';
+      return;
+    }
+    // 残量（％）で色と表示を決める：半分以上＝緑、2割超〜半分未満＝黄、2割以下＝赤
+    const rem = 100 - n;
+    fill.style.width = n + '%';
+    let cls = 'ok';
+    let msg = '：ディスク残量は半分以上あります';
+    if (rem < 50 && rem > 20) {
+      cls = 'warn';
+      msg = '：ディスク残量が半分以下になりました';
+    } else if (rem <= 20) {
+      cls = 'danger';
+      msg = '：ディスク残量が2割以下になりました';
+    }
+    fill.className = 'fill ' + cls;
+    gaugeText.textContent = msg;
+  }
+  gb.addEventListener('input', updateGauge);
+
+  // ---- モーダル ----
+  function openModal(msg) {
+    modalMsg.textContent = msg;
+    modal.classList.remove('hidden');
+    $('modalOk').focus();
+  }
+  function closeModal() {
+    modal.classList.add('hidden');
+    timeBtn.focus();
+  }
+  $('modalOk').addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+  });
+
+  timeBtn.addEventListener('click', function () {
+    if (timeBtn.disabled) return;
+    const d = new Date();
+    openModal('見てくれてありがとう！現在時刻は' + d.getHours() + '時' + d.getMinutes() + '分です。');
+  });
+
+  // ---- 表示の切り替え（画像・モバイル・JS）----
+  function applyImg() { timeBtn.classList.toggle('noimg', !imgChk.checked); timeBtn.textContent = '現在時刻'; }
+  function applyMob() { page.classList.toggle('mobile', mobChk.checked); }
+  function applyJs() {
+    const on = jsChk.checked;
+    if (on) {
+      startClock();
+      timeBtn.disabled = false;
+      gb.disabled = false;
+      statusText.textContent = '完了: progress bar';
+    } else {
+      stopClock();
+      clockEl.textContent = '現在時刻は（JSが無効のため更新されません）';
+      timeBtn.disabled = true;
+      gb.disabled = true;
+      statusText.textContent = 'JS は無効です';
+    }
+  }
+  imgChk.addEventListener('change', applyImg);
+  mobChk.addEventListener('change', applyMob);
+  jsChk.addEventListener('change', applyJs);
+
+  // ---- ツールバー ----
+  let loadTimer = null;
+  function fakeLoad(done) {
+    statusText.textContent = '読み込み中…';
+    clearTimeout(loadTimer);
+    loadTimer = setTimeout(function () { statusText.textContent = done; }, 400);
+  }
+  function resetPage() {
+    gb.value = '';
+    updateGauge();
+  }
+
+  $('reload').addEventListener('click', function () {
+    resetPage();
+    fakeLoad('完了: progress bar');
+  });
+
+  $('home').addEventListener('click', function () {
+    $('addr').value = DEMO_URL;
+    resetPage();
+    fakeLoad('完了: progress bar');
+  });
+
+  function go() {
+    const target = $('addr').value.trim();
+    if (target === '') return;
+    if (target !== DEMO_URL) {
+      statusText.textContent = '（このデモでは別のページは表示できません）';
+      return;
+    }
+    resetPage();
+    fakeLoad('完了: progress bar');
+  }
+  $('go').addEventListener('click', go);
+  $('addr').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+
+
+  // ---- 初期化 ----
+  applyImg();
+  applyMob();
+  updateGauge();
+  applyJs();
+})();
+</script>
+</body>
+</html>
