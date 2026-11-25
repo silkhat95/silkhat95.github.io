@@ -15,11 +15,11 @@ function js1(num){
     gage.value = num.value;
 // ココから下は コメントのための指定
     var comment = document.getElementById('cmt');
-    if (num.value <= 5) {
+    if (num.value <= 50) {
         comment.value = "ディスク残量は半分以上あります";
-    } else if (num.value > 5, num.value <= 8) {
+    } else if (num.value > 50, num.value <= 80) {
         comment.value = "ディスク残量が半分以下になりました";
-    } else if (num.value > 8, num.value <= 10) {
+    } else if (num.value > 80, num.value <= 100) {
         comment.value = "ディスク残量が２割以下になりました";
     }
 }
